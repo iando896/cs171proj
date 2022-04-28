@@ -26,6 +26,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <functional>
 
 using namespace std;
 
@@ -36,12 +37,47 @@ public:
 
     Action getAction ( int number ) override;
 
-
     // ======================================================================
     // YOUR CODE BEGINS
     // ======================================================================
 
+    class Coord {
+        public:
+        Coord() : x(0), y(0) {}
+        Coord(int x, int y) : x(x), y(y) {}
+        Coord operator+(const Coord& right) const {
+            return Coord(x + right.x, y + right.y);
+        }
+        bool operator<(const Coord& right) const {
+            return x < right.x || (x == right.x && y < right.y);
+        }
+        int x;
+        int y;
+    };
+    
+    void addToFrontier(Coord coord);
+    bool validCoord(Coord coord); 
+    void record(Coord coord);
+    void decrementSurrounding(Coord coord);
 
+    /*
+    class label() {
+    public:
+        label(int x) : actual(x), delta(0) {}
+        int getEffective() { return actual - delta; }
+        int increment() { delta++; }
+        int decrement() { delta--; }
+    private:
+        int actual;
+        int delta;
+    }*/
+    Coord lastMove;
+
+    vector<Coord> frontier;
+    set<Coord> moves;
+    map<Coord, int> tileMap;
+
+    vector<Coord> tileDeltas;
 
     // ======================================================================
     // YOUR CODE ENDS
