@@ -54,11 +54,16 @@ public:
         int x;
         int y;
     };
+
+    #define PossibleWorld std::vector<Coord>
     
-    void addToFrontier(Coord coord);
+    void addToZeroFrontier(Coord coord);
     bool validCoord(Coord coord); 
     void record(Coord coord);
     void decrementSurrounding(Coord coord);
+    set<Coord> surroundingUncovered(Coord coord);
+    Action checkFlagFrontier();
+
 
     /*
     class label() {
@@ -71,11 +76,15 @@ public:
         int actual;
         int delta;
     }*/
+
+private:
     Coord lastMove;
 
-    vector<Coord> frontier;
+    vector<Coord> zeroFrontier;
     set<Coord> moves;
     map<Coord, int> tileMap;
+    set<Coord> flags;
+    vector<Coord> flagFrontier;
 
     vector<Coord> tileDeltas;
 
