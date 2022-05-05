@@ -32,7 +32,7 @@ MyAI::MyAI ( int _rowDimension, int _colDimension, int _totalMines, int _agentX,
     agentY = _agentY;
 
     //cout << "BOARD SIZE: " << rowDimension << ", " << colDimension << endl;
-    cout << "STARTING MOVE: " << agentX << ", " << agentY << endl;
+    //cout << "STARTING MOVE: " << agentX << ", " << agentY << endl;
 
     lastMove = { agentX, agentY };
     moves.insert(lastMove);
@@ -89,13 +89,13 @@ Agent::Action MyAI::getAction( int number )
         Coord move = zeroFrontier.back();
         zeroFrontier.pop_back();
         record(move);
-        cout << move.x << ", " << move.y << endl;
+        //cout << move.x << ", " << move.y << endl;
         return {UNCOVER, move.x, move.y};
     }
 
     //Check winning condition
     if (flags.size() == totalMines) {
-        cout << "FOUND ALL FLAGS, LEFT THE GAME\n";
+        //cout << "FOUND ALL FLAGS, LEFT THE GAME\n";
         return {LEAVE, lastMove.x, lastMove.y};
     }
 
@@ -122,7 +122,7 @@ Agent::Action MyAI::getAction( int number )
     
     //model checking
     if (!flagFrontier.size()) {
-        cout << "MODEL CHECKING: " << endl;
+        //cout << "MODEL CHECKING: " << endl;
 
         //for each local area
         for_each(tileMap.begin(), tileMap.end(), [&](pair<Coord, int> symbol ) { 
@@ -283,12 +283,12 @@ Agent::Action MyAI::getAction( int number )
                     if (bomb) {
                         if (!flags.count(tile)) {
                             addFlag(tile);
-                            cout << "Added " << tile.x << ", " << tile.y << " to the flagFrontier!\n";
+                            //cout << "Added " << tile.x << ", " << tile.y << " to the flagFrontier!\n";
                         }
                     }
                     else {
                         if (!moves.count(tile) && !flags.count(tile)) {
-                            cout << "Added " << tile.x << ", " << tile.y << " to the zeroFrontier!\n";
+                            //cout << "Added " << tile.x << ", " << tile.y << " to the zeroFrontier!\n";
                             zeroFrontier.push_back(tile);
                             moves.insert(tile);
                         }
@@ -305,7 +305,7 @@ Agent::Action MyAI::getAction( int number )
     }
     
     //lose
-    cout << "OUT OF MOVES, LEFT THE GAME\n";
+    //cout << "OUT OF MOVES, LEFT THE GAME\n";
     return {LEAVE, lastMove.x, lastMove.y};
     // ======================================================================
     // YOUR CODE ENDS
@@ -322,7 +322,7 @@ void MyAI::addToZeroFrontier(Coord coord) {
         if (validCoord(coord) && !moves.count(coord) && !flags.count(coord)) {
             zeroFrontier.push_back(coord);
             moves.insert(coord);
-            cout << "Added " << coord.x << ", " << coord.y << " to the zeroFrontier!\n";
+            //cout << "Added " << coord.x << ", " << coord.y << " to the zeroFrontier!\n";
         }
     };
 
