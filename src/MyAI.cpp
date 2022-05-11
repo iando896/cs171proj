@@ -99,7 +99,7 @@ Agent::Action MyAI::getAction( int number )
         return {LEAVE, lastMove.x, lastMove.y};
     }
 
-    /*
+    
     //FIND FLAGS
     //OP strat
     for_each(tileMap.begin(), tileMap.end(), [&](pair<Coord, int> symbol ) { 
@@ -113,12 +113,11 @@ Agent::Action MyAI::getAction( int number )
             for (Coord c : covered) {
                 if (!flags.count(c)) {
                     addFlag(c);
-                    cout << "Added " << c.x << ", " << c.y << " to the flagFrontier!\n";
+                    //cout << "Added " << c.x << ", " << c.y << " to the flagFrontier!\n";
                 }
             }
         }
-    });*/
-
+    });
     
     //model checking
     if (!flagFrontier.size()) {
@@ -131,19 +130,6 @@ Agent::Action MyAI::getAction( int number )
 
             //STEP 0: PRECOMPUTE
             set<Coord> localTiles = surroundingCovered(coord, true);
-
-            class NumberTile {
-            public:
-                NumberTile() : effectiveValue(0) { range.min = 0; range.max = 0;}
-                NumberTile(int x) : NumberTile() { effectiveValue = x; range.max = x; }
-                struct Range {
-                    int min;
-                    int max;
-                };
-                int effectiveValue;
-                Range range;
-                set<Coord> areaTiles;
-            };
 
             map<Coord, NumberTile> numberTiles;
             vector<Coord> toPrune;
@@ -295,10 +281,135 @@ Agent::Action MyAI::getAction( int number )
                     }
                 }
             }
+        });
+    }
 
+    //LAST RESORT - STATISTICS-BASED GUESS
+    if (!flagFrontier.size()) { 
+
+        //Construct global area
+        set<Coord> globalArea;
+        for_each(tileMap.begin(), tileMap.end(), [&](pair<Coord, int> symbol ) { 
+            Coord coord = symbol.first;
+            int effectiveLabel = symbol.second;
+            set<Coord> localArea = surroundingCovered(coord);
+            for_each(globalArea.begin(), globalArea.end(), [&](const Coord& t ) {
+                if (globalArea.count(t)) {
+                    globalArea.insert(t);
+                }
+            });
+                
         });
 
+       //arbitrarily ordered local tiles
+        map<Coord, bool> localTilesAndBomb;
+        vector<bool*> order; //use pointer to change variable in localTilesAndBomb
+        for (Coord c : globalArea) {
+            localTilesAndBomb.insert(pair<Coord, bool>(c, false));
+            order.push_back(&localTilesAndBomb.at(c));
+        }
+
+        vector<map<Coord, bool>> possibleWorlds;
+
+        //STEP 1: PERMUTE
+        //use binary representation to go through all possible boolean sets
+        for (int permutation = 0; permutation < pow(2, globalArea.size()); permutation++) {
+            //cout << "permuation: " << permutation << endl;
+
+            int count = 0;
+            for (int i = 0; i < order.size(); i++) {
+                *order[i] = (permutation >> i) & 1; //change using pointer
+                if (*order[i]) {
+                    count++;
+                }
+            } 
+            if (count > totalMines - flags.size()) {
+                continue;
+            }
+
+
+
+            bool valid = true;
+            //for each number tile
+            for (pair<Coord, int> p : tileMap) { 
+                Coord tileCoord = p.first;
+                int effectiveValue = p.second;
+
+                set<Coord> areaTiles = surroundingCovered(tileCoord);
+
+                //count number of bombs in tiles surrounding number tile
+                int numBombs = 0;
+                
+                //cout << info.areaTiles.size() << endl;
+                for (Coord c : areaTiles) {
+                    
+                    //if tile is in the local area and is a bomb
+                    if (localTilesAndBomb.count(c) && localTilesAndBomb.at(c)) {
+                        numBombs++;
+                    }
+                }
+                
+                //if number of bombs does not obey tile number
+                if (numBombs != effectiveValue) {
+                    //cout << "DISCARDED\n";
+
+                    //world is not a possible world
+                    valid = false;
+                    //stop checking tiles
+                    break;
+                }
+
+            }
+
+            //valid world
+            if (valid) {
+                //record it
+                possibleWorlds.push_back(localTilesAndBomb);
+            }
+
+
+            map<Coord, int> bombCounts;
+            for (const Coord& c : globalArea) {
+                
+                bombCounts.insert(pair<Coord, int>(c, 0));
+            }
+            
+            //for each possible world
+            for (map<Coord, bool>& world : possibleWorlds) {
+                for (pair<Coord, bool> t : world) {
+                    Coord c = t.first;
+                    bool b = t.second;
+
+                    if (b) {
+                        bombCounts.at(c)++;
+                    }
+
+                }
+            }
+
+            Coord minCoord;
+            int minValue = 0;
+            bool first = false;
+
+            for (pair<const Coord, int>& p: bombCounts) {
+                if (first) {
+                    minCoord = p.first;
+                    minValue = p.second;
+                }
+                else {
+                    if (p.second < minValue) {
+                        minCoord = p.first;
+                        minValue = p.second;
+                    }
+                }
+            }
+
+            //insert our guess!
+            zeroFrontier.push_back(minCoord);
+        }
+
     }
+
 
     if (flagFrontier.size() || zeroFrontier.size()) {
         goto start;
