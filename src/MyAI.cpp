@@ -316,60 +316,64 @@ Agent::Action MyAI::getAction( int number )
 
         //STEP 1: PERMUTE
         //use binary representation to go through all possible boolean sets
-        for (unsigned int permutation = 0; permutation < pow(2, globalArea.size()); permutation++) {
-            //cout << "permuation: " << permutation << endl;
 
-            int count = 0;
-            for (int i = 0; i < order.size(); i++) {
-                *order[i] = (permutation >> i) & 1; //change using pointer
-                if (*order[i]) {
-                    count++;
-                }
-            } 
-            if (count > totalMines - flags.size()) {
-                continue;
-            }
-
-
-
-            bool valid = true;
-            //for each number tile
-            for (pair<Coord, int> p : tileMap) { 
-                Coord tileCoord = p.first;
-                int effectiveValue = p.second;
-
-                set<Coord> areaTiles = surroundingCovered(tileCoord);
-
-                //count number of bombs in tiles surrounding number tile
-                int numBombs = 0;
+        function<void(int, int)> doTheRecursion = [&](int bombsLeft, int index) {
+            //base case
+            if (index == globalArea.size()) {
+            //all values are filled out, do the thing    
                 
-                //cout << info.areaTiles.size() << endl;
-                for (Coord c : areaTiles) {
+                bool valid = true;
+                //for each number tile
+                for (pair<Coord, int> p : tileMap) { 
+                    Coord tileCoord = p.first;
+                    int effectiveValue = p.second;
+
+                    set<Coord> areaTiles = surroundingCovered(tileCoord);
+
+                    //count number of bombs in tiles surrounding number tile
+                    int numBombs = 0;
                     
-                    //if tile is in the local area and is a bomb
-                    if (localTilesAndBomb.count(c) && localTilesAndBomb.at(c)) {
-                        numBombs++;
+                    //cout << info.areaTiles.size() << endl;
+                    for (Coord c : areaTiles) {
+                        
+                        //if tile is in the local area and is a bomb
+                        if (localTilesAndBomb.count(c) && localTilesAndBomb.at(c)) {
+                            numBombs++;
+                        }
                     }
+                    
+                    //if number of bombs does not obey tile number
+                    if (numBombs != effectiveValue) {
+                        //cout << "DISCARDED\n";
+
+                        //world is not a possible world
+                        valid = false;
+                        //stop checking tiles
+                        break;
+                    }
+
                 }
+
+                //valid world
+                if (valid) {
+                    //record it
+                    possibleWorlds.push_back(localTilesAndBomb);
+                }
+
+
+                return;
+            }
+    
+            if (bombsLeft != 0) {
+                *order[index] = 1;
+                doTheRecursion(bombsLeft - 1, index + 1);
+            }
+            *order[index] = 0;
+            doTheRecursion(bombsLeft, index + 1);
                 
-                //if number of bombs does not obey tile number
-                if (numBombs != effectiveValue) {
-                    //cout << "DISCARDED\n";
+        };
 
-                    //world is not a possible world
-                    valid = false;
-                    //stop checking tiles
-                    break;
-                }
-
-            }
-
-            //valid world
-            if (valid) {
-                //record it
-                possibleWorlds.push_back(localTilesAndBomb);
-            }
-        }
+        doTheRecursion(totalMines - flags.size(), 0);
 
         //conclusions
         map<Coord, int> bombCounts;
