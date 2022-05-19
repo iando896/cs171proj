@@ -293,13 +293,13 @@ Agent::Action MyAI::getAction( int number )
             Coord coord = symbol.first;
             int effectiveLabel = symbol.second;
             set<Coord> localArea = surroundingCovered(coord);
-            for_each(globalArea.begin(), globalArea.end(), [&](const Coord& t ) {
-                if (globalArea.count(t)) {
+            for_each(localArea.begin(), localArea.end(), [&](const Coord& t ) {
+                if (!globalArea.count(t)) {
                     globalArea.insert(t);
                 }
             });
-                
         });
+
 
        //arbitrarily ordered local tiles
         map<Coord, bool> localTilesAndBomb;
@@ -409,7 +409,6 @@ Agent::Action MyAI::getAction( int number )
         }
 
     }
-
 
     if (flagFrontier.size() || zeroFrontier.size()) {
         goto start;
