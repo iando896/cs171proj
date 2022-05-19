@@ -75,7 +75,6 @@ Agent::Action MyAI::getAction( int number )
         toErase.pop_back();
     }
     
-    
     //flag frontier
     if (flagFrontier.size()) {
         Coord coord = flagFrontier.back();
@@ -99,7 +98,7 @@ Agent::Action MyAI::getAction( int number )
         return {LEAVE, lastMove.x, lastMove.y};
     }
 
-    /*
+    
     //FIND FLAGS
     //OP strat
     for_each(tileMap.begin(), tileMap.end(), [&](pair<Coord, int> symbol ) { 
@@ -113,11 +112,11 @@ Agent::Action MyAI::getAction( int number )
             for (Coord c : covered) {
                 if (!flags.count(c)) {
                     addFlag(c);
-                    cout << "Added " << c.x << ", " << c.y << " to the flagFrontier!\n";
+                    //cout << "Added " << c.x << ", " << c.y << " to the flagFrontier!\n";
                 }
             }
         }
-    });*/
+    });
 
     
     //model checking
@@ -131,19 +130,6 @@ Agent::Action MyAI::getAction( int number )
 
             //STEP 0: PRECOMPUTE
             set<Coord> localTiles = surroundingCovered(coord, true);
-
-            class NumberTile {
-            public:
-                NumberTile() : effectiveValue(0) { range.min = 0; range.max = 0;}
-                NumberTile(int x) : NumberTile() { effectiveValue = x; range.max = x; }
-                struct Range {
-                    int min;
-                    int max;
-                };
-                int effectiveValue;
-                Range range;
-                set<Coord> areaTiles;
-            };
 
             map<Coord, NumberTile> numberTiles;
             vector<Coord> toPrune;
@@ -295,9 +281,7 @@ Agent::Action MyAI::getAction( int number )
                     }
                 }
             }
-
         });
-
     }
 
     if (flagFrontier.size() || zeroFrontier.size()) {
