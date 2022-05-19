@@ -54,6 +54,19 @@ public:
         int x;
         int y;
     };
+
+    class NumberTile {
+    public:
+        NumberTile() : effectiveValue(0) { range.min = 0; range.max = 0;}
+        NumberTile(int x) : NumberTile() { effectiveValue = x; range.max = x; }
+        struct Range {
+            int min;
+            int max;
+        };
+        int effectiveValue;
+        Range range;
+        set<Coord> areaTiles;
+    };
     
     void addToZeroFrontier(Coord coord);
     bool validCoord(Coord coord); 
