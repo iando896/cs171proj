@@ -303,6 +303,7 @@ Agent::Action MyAI::getAction( int number )
         //for (pair<const Coord, int>& symbol : tileMap) { 
         //}
 
+
        //arbitrarily ordered local tiles
         map<Coord, bool> localTilesAndBomb;
         vector<bool*> order; //use pointer to change variable in localTilesAndBomb
