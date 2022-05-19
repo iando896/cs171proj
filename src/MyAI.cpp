@@ -59,7 +59,7 @@ Agent::Action MyAI::getAction( int number )
     });
     
     if (number == 0) {
-        addToZeroFrontier(lastMove);
+        addToUncoverFrontier(lastMove);
     }
     else {
         //check surrounding tiles for flags
@@ -83,10 +83,10 @@ Agent::Action MyAI::getAction( int number )
         return {FLAG, coord.x, coord.y};
     }
 
-    //push the 0 zeroFrontier
-    if (zeroFrontier.size()) {
-        Coord move = zeroFrontier.back();
-        zeroFrontier.pop_back();
+    //push the 0 uncoverFrontier
+    if (uncoverFrontier.size()) {
+        Coord move = uncoverFrontier.back();
+        uncoverFrontier.pop_back();
         record(move);
         //cout << move.x << ", " << move.y << endl;
         return {UNCOVER, move.x, move.y};
@@ -119,7 +119,7 @@ Agent::Action MyAI::getAction( int number )
     });
     
     //model checking
-    if (!flagFrontier.size()) {
+    if (!flagFrontier.size() && !uncoverFrontier.size()) {
         //cout << "MODEL CHECKING: " << endl;
 
         //for each local area
@@ -273,8 +273,8 @@ Agent::Action MyAI::getAction( int number )
                     }
                     else {
                         if (!moves.count(tile) && !flags.count(tile)) {
-                            //cout << "Added " << tile.x << ", " << tile.y << " to the zeroFrontier!\n";
-                            zeroFrontier.push_back(tile);
+                            //cout << "Added " << tile.x << ", " << tile.y << " to the uncoverFrontier!\n";
+                            uncoverFrontier.push_back(tile);
                             moves.insert(tile);
                         }
                     }
@@ -284,21 +284,24 @@ Agent::Action MyAI::getAction( int number )
     }
 
     //LAST RESORT - STATISTICS-BASED GUESS
-    if (!flagFrontier.size()) { 
-
-        //Construct global area
+    if (!flagFrontier.size() && !uncoverFrontier.size()) { 
         set<Coord> globalArea;
-        for_each(tileMap.begin(), tileMap.end(), [&](pair<Coord, int> symbol ) { 
+        auto foo = [&](pair<const Coord, int> symbol ) { 
             Coord coord = symbol.first;
             int effectiveLabel = symbol.second;
-            set<Coord> localArea = surroundingCovered(coord);
-            for_each(globalArea.begin(), globalArea.end(), [&](const Coord& t ) {
-                if (globalArea.count(t)) {
+            set<Coord> localArea = surroundingCovered(coord, true);
+            for_each(localArea.begin(), localArea.end(), [&](const Coord& t ) {
+                if (!globalArea.count(t)) 
                     globalArea.insert(t);
-                }
-            });
-                
-        });
+                });
+            };
+
+        for_each(tileMap.begin(), tileMap.end(), foo);
+
+        //Construct global area
+        
+        //for (pair<const Coord, int>& symbol : tileMap) { 
+        //}
 
        //arbitrarily ordered local tiles
         map<Coord, bool> localTilesAndBomb;
@@ -312,7 +315,7 @@ Agent::Action MyAI::getAction( int number )
 
         //STEP 1: PERMUTE
         //use binary representation to go through all possible boolean sets
-        for (int permutation = 0; permutation < pow(2, globalArea.size()); permutation++) {
+        for (unsigned int permutation = 0; permutation < pow(2, globalArea.size()); permutation++) {
             //cout << "permuation: " << permutation << endl;
 
             int count = 0;
@@ -365,52 +368,52 @@ Agent::Action MyAI::getAction( int number )
                 //record it
                 possibleWorlds.push_back(localTilesAndBomb);
             }
+        }
 
+        //conclusions
+        map<Coord, int> bombCounts;
+        for (const Coord& c : globalArea) {
+            bombCounts.insert(pair<Coord, int>(c, 0));
+        }
+        
+        //for each possible world
+        for (map<Coord, bool>& world : possibleWorlds) {
+            for (pair<Coord, bool> t : world) {
+                Coord c = t.first;
+                bool b = t.second;
 
-            map<Coord, int> bombCounts;
-            for (const Coord& c : globalArea) {
-                
-                bombCounts.insert(pair<Coord, int>(c, 0));
-            }
-            
-            //for each possible world
-            for (map<Coord, bool>& world : possibleWorlds) {
-                for (pair<Coord, bool> t : world) {
-                    Coord c = t.first;
-                    bool b = t.second;
-
-                    if (b) {
-                        bombCounts.at(c)++;
-                    }
-
+                if (b) {
+                    bombCounts.at(c)++;
                 }
+
             }
+        }
 
-            Coord minCoord;
-            int minValue = 0;
-            bool first = false;
 
-            for (pair<const Coord, int>& p: bombCounts) {
-                if (first) {
+        Coord minCoord;
+        int minValue = 0;
+        bool first = true;
+
+        for (pair<const Coord, int>& p: bombCounts) {
+            if (first) {
+                minCoord = p.first;
+                minValue = p.second;
+                first = false;
+            }
+            else {
+                if (p.second < minValue) {
                     minCoord = p.first;
                     minValue = p.second;
                 }
-                else {
-                    if (p.second < minValue) {
-                        minCoord = p.first;
-                        minValue = p.second;
-                    }
-                }
             }
-
-            //insert our guess!
-            zeroFrontier.push_back(minCoord);
         }
 
+        //insert our guess!
+        uncoverFrontier.push_back(minCoord);
     }
 
 
-    if (flagFrontier.size() || zeroFrontier.size()) {
+    if (flagFrontier.size() || uncoverFrontier.size()) {
         goto start;
     }
     
@@ -426,13 +429,13 @@ Agent::Action MyAI::getAction( int number )
 // ======================================================================
 // YOUR CODE BEGINS
 // ======================================================================
-void MyAI::addToZeroFrontier(Coord coord) {
+void MyAI::addToUncoverFrontier(Coord coord) {
 
     function<void(Coord)> checkAndAdd = [&](Coord coord){
         if (validCoord(coord) && !moves.count(coord) && !flags.count(coord)) {
-            zeroFrontier.push_back(coord);
+            uncoverFrontier.push_back(coord);
             moves.insert(coord);
-            //cout << "Added " << coord.x << ", " << coord.y << " to the zeroFrontier!\n";
+            //cout << "Added " << coord.x << ", " << coord.y << " to the uncoverFrontier!\n";
         }
     };
 
@@ -454,8 +457,8 @@ void MyAI::decrementSurrounding(Coord coord) {
         if (validCoord(coord) && tileMap.count(coord)) {
             tileMap.at(coord) -= 1;
 
-            if (tileMap.at(coord) == 0) { //add to zeroFrontier
-                addToZeroFrontier(coord);
+            if (tileMap.at(coord) == 0) { //add to uncoverFrontier
+                addToUncoverFrontier(coord);
                 toErase.push_back(coord);
             }
 
