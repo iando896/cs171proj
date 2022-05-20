@@ -54,7 +54,7 @@ public:
         int x;
         int y;
     };
-
+    
     class NumberTile {
     public:
         NumberTile() : effectiveValue(0) { range.min = 0; range.max = 0;}
@@ -67,8 +67,9 @@ public:
         Range range;
         set<Coord> areaTiles;
     };
-    
-    void addToZeroFrontier(Coord coord);
+
+
+    void addToUncoverFrontier(Coord coord);
     bool validCoord(Coord coord); 
     void record(Coord coord);
     void decrementSurrounding(Coord coord);
@@ -91,7 +92,7 @@ public:
 private:
     Coord lastMove;
 
-    vector<Coord> zeroFrontier;
+    vector<Coord> uncoverFrontier;
     set<Coord> moves;
     map<Coord, int> tileMap;
     set<Coord> flags;

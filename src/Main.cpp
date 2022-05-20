@@ -165,12 +165,15 @@ int main( int argc, char *argv[] )
             try {
                 World world(debug, aiType, individualWorldFile);
                 score = world.run();
+
                 if (score == 3)
                     ++expert;
                 else if (score == 2)
                     ++medium;
                 else if (score == 1)
                     ++easy;
+                else if(score == 0)
+                    cout<<"WORLD FAILED :("<<endl;
             }
             catch (...) {
                 sumOfScores = 0;
