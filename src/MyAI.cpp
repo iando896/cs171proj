@@ -122,6 +122,26 @@ Agent::Action MyAI::getAction( int number )
     if (!flagFrontier.size() && !uncoverFrontier.size()) {
         //cout << "MODEL CHECKING: " << endl;
 
+        //CREATE GLOBAL AREA
+
+        set<Coord> globalArea;
+        auto foo = [&](pair<const Coord, int> symbol ) { 
+            Coord coord = symbol.first;
+            int effectiveLabel = symbol.second;
+            set<Coord> localArea = surroundingCovered(coord, true);
+            for_each(localArea.begin(), localArea.end(), [&](const Coord& t ) {
+                if (!globalArea.count(t)) 
+                    globalArea.insert(t);
+                });
+            };
+
+        for_each(tileMap.begin(), tileMap.end(), foo);
+
+        map<Coord, int> bombCounts;
+        for (const Coord& c : globalArea) {
+            bombCounts.insert(pair<Coord, int>(c, 0));
+        }
+
         //for each local area
         for_each(tileMap.begin(), tileMap.end(), [&](pair<Coord, int> symbol ) { 
             Coord coord = symbol.first;
@@ -280,11 +300,51 @@ Agent::Action MyAI::getAction( int number )
                     }
                 }
             }
+
+            //update bomb counts
+            for (map<Coord, bool>& world : possibleWorlds) {
+                for (pair<Coord, bool> t : world) {
+                    Coord c = t.first;
+                    bool b = t.second;
+
+                    if (b) {
+                        bombCounts.at(c)++;
+                    }
+
+                }
+            }
+
         });
+
+        if (flagFrontier.empty() && uncoverFrontier.empty()) {
+            Coord minCoord;
+            int minValue = 0;
+            bool first = true;
+
+            for (pair<const Coord, int>& p: bombCounts) {
+                if (first) {
+                    minCoord = p.first;
+                    minValue = p.second;
+                    first = false;
+                }
+                else {
+                    if (p.second < minValue) {
+                        minCoord = p.first;
+                        minValue = p.second;
+                    }
+                }
+            }
+
+            uncoverFrontier.push_back(minCoord);
+        //cout << "MODEL CHECK GUESS: " << minCoord.x << ", " << minCoord.y << endl;
+        }
+
     }
 
+    /*
     //LAST RESORT - STATISTICS-BASED GUESS
     if (!flagFrontier.size() && !uncoverFrontier.size()) { 
+        
         set<Coord> globalArea;
         auto foo = [&](pair<const Coord, int> symbol ) { 
             Coord coord = symbol.first;
@@ -415,7 +475,7 @@ Agent::Action MyAI::getAction( int number )
 
         //insert our guess!
         uncoverFrontier.push_back(minCoord);
-    }
+    }*/
 
 
     if (flagFrontier.size() || uncoverFrontier.size()) {
