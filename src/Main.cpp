@@ -172,8 +172,8 @@ int main( int argc, char *argv[] )
                     ++medium;
                 else if (score == 1)
                     ++easy;
-                else if(score == 0)
-                    cout<<"WORLD FAILED :("<<endl;
+                //else if(score == 0)
+                    //cout<<"WORLD FAILED :("<<endl;
             }
             catch (...) {
                 sumOfScores = 0;
