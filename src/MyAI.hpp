@@ -75,7 +75,8 @@ public:
     void decrementSurrounding(Coord coord);
     set<Coord> surroundingCovered(Coord coord, bool flag = false);
     void addFlag(Coord c);
-
+    float proximityTilesVal(Coord c);
+    float proximityNumTiles(Coord c);
 
     /*
     class label() {

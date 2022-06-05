@@ -123,7 +123,6 @@ Agent::Action MyAI::getAction( int number )
         //cout << "MODEL CHECKING: " << endl;
 
         //CREATE GLOBAL AREA
-
         set<Coord> globalArea;
         auto foo = [&](pair<const Coord, int> symbol ) { 
             Coord coord = symbol.first;
@@ -141,7 +140,7 @@ Agent::Action MyAI::getAction( int number )
         for (const Coord& c : globalArea) {
             bombCounts.insert(pair<Coord, int>(c, 0));
         }
-
+        
         //for each local area
         for_each(tileMap.begin(), tileMap.end(), [&](pair<Coord, int> symbol ) { 
             Coord coord = symbol.first;
@@ -316,21 +315,30 @@ Agent::Action MyAI::getAction( int number )
 
         });
 
+        function<float(Coord, int)> calculate = [&](Coord c, int i) {
+            //return float(i) * float(notBombCounts.at(c));
+            
+            //return i * float(notBombCounts.at(c));
+
+            //float x = surroundingCovered(c).size();
+            return i * proximityTilesVal(c) / proximityNumTiles(c); //best so far - 3.25
+        };
+
         if (flagFrontier.empty() && uncoverFrontier.empty()) {
             Coord minCoord;
-            int minValue = 0;
+            float minValue = 0;
             bool first = true;
 
             for (pair<const Coord, int>& p: bombCounts) {
                 if (first) {
                     minCoord = p.first;
-                    minValue = p.second;
+                    minValue = calculate(p.first, p.second);
                     first = false;
                 }
                 else {
-                    if (p.second < minValue) {
+                    if (calculate(p.first, p.second) < minValue ) {
                         minCoord = p.first;
-                        minValue = p.second;
+                        minValue = calculate(p.first, p.second);
                     }
                 }
             }
@@ -416,6 +424,30 @@ void MyAI::addFlag(Coord c) {
     flags.insert(c);
     decrementSurrounding(c);
 }
+
+
+float MyAI::proximityTilesVal(Coord coord) {
+    int count = 0;
+    for_each(tileDeltas.begin(), tileDeltas.end(), [&](Coord& delta){ 
+        Coord toTry = coord + delta;
+        if (validCoord(toTry) && tileMap.count(toTry)) {
+            count += tileMap.at(toTry);
+        }
+    });
+    return sqrt(count);
+}
+
+float MyAI::proximityNumTiles(Coord coord) {
+    int count = 0;
+    for_each(tileDeltas.begin(), tileDeltas.end(), [&](Coord& delta){ 
+        Coord toTry = coord + delta;
+        if (validCoord(toTry) && tileMap.count(toTry)) {
+            count++;
+        }
+    });
+    return count;
+}
+
 
 // ======================================================================
 // YOUR CODE ENDS
